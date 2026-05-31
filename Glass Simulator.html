@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>بلوك ماين كرافت 3D - حل الخلفية النهائي</title>
+  <style>
+    * {
+      box-sizing: border-box; 
+    }
+    
+    body {
+      width: 100%;
+      height: 100vh;
+      margin: 0;             
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #222; /* لون احتياطي داكن */
+      user-select: none; 
+      -webkit-user-select: none;
+      overflow: hidden;
+      perspective: 1000px;
+    }
+
+    /* طبقة الخلفية المنفصلة لضمان الظهور بنسبة 100% في التطبيق */
+    .wallpaper-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      /* استخدام صورتك المحلية مع تعتيمها قليلاً ليبرز الزجاج */
+      background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), 
+                  url('Textures/Background.jpeg') repeat;
+      background-size: 700px 700px;
+      image-rendering: pixelated;
+      z-index: 1; /* في الخلفية تماماً */
+      pointer-events: none;
+    }
+    
+    /* المشهد ثلاثي الأبعاد */
+    .scene {
+      position: relative;
+      width: 180px;
+      height: 180px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transform-style: preserve-3d;
+      z-index: 5; /* فوق طبقة الخلفية */
+    }
+
+    /* حاوية المكعب بزاوية ماين كرافت الشهيرة */
+    .cube-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transform: rotateX(-25deg) rotateY(-45deg);
+      transition: transform 0.1s ease;
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    /* أسطح المكعب */
+    .cube-face {
+      position: absolute;
+      width: 180px;
+      height: 180px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .cube-face img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      -webkit-touch-callout: none;
+      -webkit-user-drag: none;
+      image-rendering: pixelated;
+    }
+
+    /* أبعاد ومواقع الأوجه في الفضاء ثلاثي الأبعاد */
+    .face-front  { transform: rotateY(0deg) translateZ(90px); }
+    .face-top    { transform: rotateX(90deg) translateZ(90px); background-color: rgba(255, 255, 255, 0.12); }
+    .face-right  { transform: rotateY(90deg) translateZ(90px); background-color: rgba(0, 0, 0, 0.15); }
+
+    /* طبقة التشققات */
+    .crack-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+      display: none;
+      image-rendering: pixelated;
+    }
+
+    /* حركة الاهتزاز عند الضرب */
+    .mining-shake {
+      animation: mineShake3D 0.05s infinite alternate;
+    }
+
+    @keyframes mineShake3D {
+      0% { transform: rotateX(-25deg) rotateY(-45deg) translate3d(2px, 1px, 0px); }
+      100% { transform: rotateX(-25deg) rotateY(-45deg) translate3d(-2px, -1px, 1px); }
+    }
+
+    /* فئة الاختفاء عند الكسر */
+    .destroyed {
+      display: none !important;
+    }
+
+    /* جزيئات الشظايا المتناثرة */
+    .particle {
+      position: absolute;
+      width: 16px; 
+      height: 16px;
+      background-image: url('Textures/glass.png'); 
+      background-size: 180px 180px; 
+      pointer-events: none;
+      image-rendering: pixelated;
+      z-index: 100;
+      transform-style: preserve-3d;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="wallpaper-bg"></div>
+
+  <main class="scene" id="mainScene">
+    <div id="mineBlock" class="cube-container" oncontextmenu="return false;">
+      
+      <div class="cube-face face-front">
+        <img class="base-glass" src="Textures/glass.png" alt="زجاج">
+        <img class="crack-overlay stage-crack" src="" alt="تصدع">
+      </div>
+      
+      <div class="cube-face face-top">
+        <img class="base-glass" src="Textures/glass.png" alt="زجاج">
+        <img class="crack-overlay stage-crack" src="" alt="تصدع">
+      </div>
+      
+      <div class="cube-face face-right">
+        <img class="base-glass" src="Textures/glass.png" alt="زجاج">
+        <img class="crack-overlay stage-crack" src="" alt="تصدع">
+      </div>
+
+    </div>
+    
+    <audio id="myAudio" src="Audios/audio.mp3" preload="auto"></audio>
+  </main>
+
+  <script>
+    const block = document.getElementById('mineBlock');
+    const mainScene = document.getElementById('mainScene');
+    const crackLayers = document.querySelectorAll('.stage-crack');
+    const audio = document.getElementById('myAudio');
+    
+    const crackStages = [
+      'Break/1779804600588.png',
+      'Break/1779804646327.png',
+      'Break/1779804691446.png',
+      'Break/1779804744831.png',
+      'Break/1779804789797.png',
+      'Break/1779804851400.png',
+      'Break/1779804931966.png',
+      'Break/1779805009617.png',
+      'Break/1779805153784.png'
+    ];
+
+    let miningInterval;
+    let startTime;
+    const totalDuration = 600; 
+    let isDestroyed = false;
+
+    function startMining(e) {
+      if (e) e.preventDefault();
+      if (isDestroyed) return; 
+      
+      block.classList.add('mining-shake');
+      startTime = Date.now();
+      
+      miningInterval = setInterval(() => {
+        const elapsedTime = Date.now() - startTime;
+        const progress = elapsedTime / totalDuration;
+        
+        if (progress >= 1) {
+          breakBlock();
+        } else {
+          const stageIndex = Math.floor(progress * crackStages.length);
+          if (stageIndex >= 0 && stageIndex < crackStages.length) {
+            crackLayers.forEach(layer => {
+              layer.src = crackStages[stageIndex];
+              layer.style.display = 'block';
+            });
+          }
+        }
+      }, 15); 
+    }
+
+    function stopMining() {
+      if (isDestroyed) return;
+      clearInterval(miningInterval);
+      block.classList.remove('mining-shake');
+      crackLayers.forEach(layer => {
+        layer.style.display = 'none';
+        layer.src = '';
+      });
+    }
+
+    function breakBlock() {
+      clearInterval(miningInterval);
+      block.classList.remove('mining-shake');
+      isDestroyed = true;
+      
+      createGlassParticles();
+      block.classList.add('destroyed'); 
+      
+      audio.currentTime = 0;
+      audio.loop = false; 
+      audio.play().catch(error => console.log("الصوت يعمل"));
+
+      setTimeout(() => {
+        resetBlock();
+      }, 2000);
+    }
+
+    function resetBlock() {
+      crackLayers.forEach(layer => {
+        layer.style.display = 'none';
+        layer.src = '';
+      });
+      block.classList.remove('destroyed');
+      isDestroyed = false;
+    }
+
+    function createGlassParticles() {
+      const pCount = 45; 
+      
+      for (let i = 0; i < pCount; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        
+        const randomXOffset = Math.floor(Math.random() * 164);
+        const randomYOffset = Math.floor(Math.random() * 164);
+        p.style.backgroundPosition = `-${randomXOffset}px -${randomYOffset}px`;
+        
+        const startX = 90 + ((Math.random() - 0.5) * 60);
+        const startY = 90 + ((Math.random() - 0.5) * 60);
+        let posZ = (Math.random() - 0.5) * 60;
+        
+        p.style.left = startX + 'px';
+        p.style.top = startY + 'px';
+        
+        mainScene.appendChild(p);
+        
+        let speedX = (Math.random() - 0.5) * 16;
+        let speedY = (Math.random() - 0.8) * 16; 
+        let speedZ = (Math.random() - 0.5) * 16; 
+        
+        let posX = startX;
+        let posY = startY;
+        let pOpacity = 1;
+        
+        const pInterval = setInterval(() => {
+          speedY += 0.8; 
+          posX += speedX;
+          posY += speedY;
+          posZ += speedZ;
+          pOpacity -= 0.04; 
+          
+          p.style.left = posX + 'px';
+          p.style.top = posY + 'px';
+          p.style.opacity = pOpacity;
+          
+          p.style.transform = `translateZ(${posZ}px) rotateX(${posX * 2}deg) rotateY(${posY * 2}deg)`;
+          
+          if (pOpacity <= 0) {
+            clearInterval(pInterval);
+            p.remove();
+          }
+        }, 20);
+      }
+    }
+
+    block.addEventListener('mousedown', startMining);
+    block.addEventListener('mouseup', stopMining);
+    block.addEventListener('mouseleave', stopMining);
+
+    block.addEventListener('touchstart', startMining, { passive: false });
+    block.addEventListener('touchend', stopMining);
+    block.addEventListener('touchcancel', stopMining);
+  </script>
+
+</body>
+</html>
